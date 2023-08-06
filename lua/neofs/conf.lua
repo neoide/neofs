@@ -30,7 +30,15 @@ return {
     filter = filter,
   },
   view = {
-    dir_open_icon  = "▼",
-    dir_close_icon = "▶",
+    dir_opened_icon = "",
+    dir_closed_icon = "",
+    -- dir_opened_icon = "▼",
+    -- dir_closed_icon = "▶",
+    indent_sign = "│",
+    last_indent_sign = "└",
+    columns = {
+      left  = { "name" },
+      right = { "owner", "group", "mode", "mtime", "size" },
+    }
   },
 }

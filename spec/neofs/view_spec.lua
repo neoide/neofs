@@ -58,7 +58,7 @@ describe("neofs.view", function()
 
     local entries = {
       { name = "dir-1", path = "/root/dir-1", level = 0, type = const.TYPE_DIR },
-      { name = "- dir-2", path = "/root/dir-2", level = 0, type = const.TYPE_DIR },
+      { name = "dir-2", path = "/root/dir-2", level = 0, type = const.TYPE_DIR },
       { name = "dir-2-1", path = "/root/dir-2/dir-2-1", level = 0, type = const.TYPE_DIR },
       { name = "dir-2-2", path = "/root/dir-2/dir-2-2", level = 0, type = const.TYPE_DIR },
       { name = "file-2-1", path = "/root/dir-2/file-2-1", level = 0, type = const.TYPE_FILE },
@@ -68,7 +68,9 @@ describe("neofs.view", function()
       { name = "file-2", path = "/root/file-2", level = 0, type = const.TYPE_FILE },
       { name = "file-3", path = "/root/file-2", level = 0, type = const.TYPE_FILE },
     }
-
-
+  
+    v:oncollapsed(entries, 2, 5)
+    local lines = vim.api.nvim_buf_get_lines(v.bufnum, 0, -1, true)
+    print(vim.inspect(lines))
   end)
 end)

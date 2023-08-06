@@ -2,6 +2,7 @@ local math = require("math")
 local conf = require("neofs.conf")
 local const = require("neofs.const")
 
+-- { lines, highlights, signs }
 local default_renderer = function(line, columns, entry)
   return entry.name
 end
@@ -54,6 +55,12 @@ function View:close()
   vim.api.nvim_buf_delete(self:bufnr())
 end
 
+function View:onresized(entries)
+  -- TODO: recalculate columns
+  -- TODO: set header
+  -- TODO: self:onexpanded(entries, 1, #entries)
+end
+
 function View:onchanged(entries, root, len)
   local bufnum = self.bufnum
   local buflen = vim.api.nvim_buf_line_count(bufnum)
@@ -71,7 +78,10 @@ end
 
 function View:oncollapsed(entries, root, len)
   -- TODO: nvim_buf_clear_namespace
-  -- vim.api.nvim_buf_set_lines(self:bufnr(), root, root + nchildren, true, {})
+  local bufnum = self.bufnum
+  local lines = self:render(entries, root, 1)
+  vim.api.nvim_buf_set_lines(bufnum, root, root + len, true, lines)
+  -- TODO: nvim_buf_add_highlight
 end
 
 return { new = View.new, render = render }

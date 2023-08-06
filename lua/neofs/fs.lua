@@ -84,13 +84,6 @@ M.scandir = function(level, root, expanded, filter)
   return entries
 end
 
-M.mkdir = function(path)
-  local ok, err = uv.fs_mkdir(path, 493)
-  if not ok then
-    error(err)
-  end
-end
-
 M.trash = function(cmd, path)
   if not cmd then
     error("trash cmd is not configured")
@@ -104,12 +97,21 @@ M.trash = function(cmd, path)
   end
 end
 
+M.mkdir = function(path)
+  local ok, err = uv.fs_mkdir(path, 493)
+  if not ok then
+    error(err)
+  end
+  return path
+end
+
 M.create = function(path)
   local _, fd, err, code = pcall(uv.fs_open, path, "w", 420)
   if not fd then
     error(err, code)
   end
   uv.fs_close(fd)
+  return path
 end
 
 M.rename = function(src, dst)
@@ -117,6 +119,7 @@ M.rename = function(src, dst)
   if not ok then
     error(err)
   end
+  return dst
 end
 
 return M
