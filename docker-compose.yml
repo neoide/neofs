@@ -3,14 +3,15 @@ version: "3.8"
 services:
   tests:
     build: .
-    command:
-    - nvim
-    - --headless
-    - --noplugin
-    - -u
-    - spec/init.lua
-    - -c
-    - 'lua require("test")'
+    # command:
+    # - nvim
+    # - --headless
+    # - --noplugin
+    # - -u
+    # - spec/init.lua
+    # - -c
+    # - 'lua require("test")'
+    command: ./test.sh
     working_dir: /src
     volumes:
     - .:/src

@@ -10,7 +10,6 @@ function Tree:new()
   local default = {
     entries  = {},
     expanded = {},
-    isopen   = false,
   }
   return setmetatable(default, Tree)
 end

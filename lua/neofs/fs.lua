@@ -12,14 +12,12 @@ local TYPES = {
   link      = const.TYPE_LINK,
 }
 
-local sep = "/"
-
 local function trim(str)
   return (str:gsub("(/+)$", ""))
 end
 
 local function join(parent, child)
-  return string.format("%s%s%s", trim(parent), sep, trim(child))
+  return fmt("%s%s%s", trim(parent), const.SEPARATOR, trim(child))
 end
 
 local function exists(path)
@@ -66,6 +64,7 @@ M.scandir = function(level, root, expanded, filter)
       if not name then
         break
       end
+
       local type = TYPES[uv_type]
       if not type then
         error("unexpected directory entry type " .. uv_type)
