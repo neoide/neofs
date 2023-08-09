@@ -23,6 +23,7 @@ end
 
 return {
   cmd = {
+    git   = "git",
     trash = "trash",
   },
   tree = {

@@ -1,0 +1,41 @@
+root: /tmp/neofs
+
+cases:
+- name: empty directory
+  tree: {}
+  steps:
+  - command: load
+    result: []
+
+- name: simple directory
+  tree:
+  - name: dir-1
+    type: dir
+    children:
+      - name: dir-1-1
+        type: dir
+      - name: dir-1-2
+        type: dir
+      - name: file-1-1
+        type: file
+      - name: file-1-2
+        type: file
+  - name: dir-2
+    type: dir
+  - name: dir-3
+    children:
+      - name: file-3-1
+        type: file
+      - name: file-3-2
+        type: file
+  - name: file-1
+    type: file
+  - name: file-2
+    type: file
+  steps:
+  - command: load
+    result:
+    - { name: dir-1, type: 1, level: 1, path: /tmp/neofs/dir-1 }
+    - { name: dir-2, type: 1, level: 1, path: /tmp/neofs/dir-2 }
+    - { name: file-1, type: 2, level: 1, path: /tmp/neofs/file-2 }
+    - { name: file-2, type: 2, level: 1, path: /tmp/neofs/file-2 }

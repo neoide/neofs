@@ -28,9 +28,14 @@ function Tree:new(cwd)
   return setmetatable(default, Tree)
 end
 
+function Tree:scandir(level, dir)
+  -- TODO: add git status results
+  return fs.scandir(level, dir, self.expanded, conf.tree.filter)
+end
+
 function Tree:load(root)
   if root == 0 then
-    self.entries = fs.scandir(0, cwd, self.expanded, conf.tree.filter)
+    self.entries = self:scandir(0, cwd)
     self.event.onchanged(self.entries, 1, #self.entries)
     return
   end
@@ -39,12 +44,26 @@ function Tree:load(root)
     error(string.format("reload failed: index out of range %d", root))
   end
 
+  local oldnumchildren = self:numchildren(root)
   local dir = self.entries[root]
 
-  local entries = fs.scandir(dir.level, dir.path, self.expanded, const.tree.filter)
-  -- TODO change entries
-  -- TODO seems oldlen and newlen must be passed
-  self.event.onchanged(self.entries, root, #entries)
+  local children = self:scandir(dir.level, dir.path)
+
+  local entries = {}
+  for i = 1, root do
+    entries[i] = self.entries[i]
+  end
+
+  for i = root + 1, root + #children do
+    entries[i] = children[i - root]
+  end
+
+  for i = root + numchildren + 1, #self.entries do
+    entries[i] = self.entries[i]
+  end
+
+  self.entries = entries
+  self.event.onchanged(self.entries, root, #children, oldnumchildren + 1)
 end
 
 --- (int, list[entry) -> void
@@ -60,7 +79,7 @@ function Tree:expand(index)
   end
 
   self.expanded[entry.path] = true
-  local children = fs.scandir(0, entry.path, self.expanded, conf.tree.filter)
+  local children = self:scandir(0, entry.path)
 
   local entries = {}
   for i = 1, index do
@@ -116,13 +135,32 @@ function Tree:collapse(index)
   self.event.oncollapsed(self.entries, index, collapsed + 1)
 end
 
+function Tree:numchildren(parent)
+  -- TODO: make algorithm order independent
+  if parent == 0 then
+    return #entries
+  end
+
+  local level = self.entries[parent].level
+
+  local result = 0
+  for i = parent, #entries do
+    if self.entries[i].level >= level then
+      break
+    end
+    result = result + 1
+  end
+  return result
+end
+
 function Tree:parent(index)
+  -- TODO: make algorithm order independent
   if index < 1 or index > #self.entries then
     error(string.format("parent failed: index out of range %d", index))
   end
 
   local entry = self.entries[index]
-  if entry.level = 1 then
+  if entry.level == 1 then
     return 0
   end
 

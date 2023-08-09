@@ -1,0 +1,9 @@
+return {
+  default = {
+    output    = "TAP",
+    pattern   = ".spec.lua",
+    coverage  = true,
+    verbose   = false,
+    -- tags      = {"neofs.fs.rename"},
+  },
+}

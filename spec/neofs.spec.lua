@@ -21,8 +21,4 @@ describe("neofs setup", function()
       conf.view.dir_open_icon = "X"
     end)
   end)
-
-  it("inspects vim :)", function()
-    -- print(vim.inspect(vim))
-  end)
 end)

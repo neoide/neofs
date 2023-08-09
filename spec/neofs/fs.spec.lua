@@ -97,7 +97,7 @@ describe("neofs.fs", function()
     end)
   end)
 
-  describe("rename", function()
+  describe("rename #neofs.fs.rename", function()
     it("renames if file exists", function()
       local src = fs.join(NEWCWD, "dir_4/file_1")
       local dst = fs.join(NEWCWD, "dir_3/file_1")

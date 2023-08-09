@@ -7,7 +7,9 @@ RUN apk add \
     lua-dev \
     luarocks \
     neovim \
-    trash-cli
+    trash-cli \
+    yaml-dev \
+    git
 
 RUN adduser -D neofs
 
