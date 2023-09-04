@@ -2,7 +2,6 @@ local const = require("neofs.const")
 local conf = require("neofs.conf")
 local tree = require("neofs.tree")
 local fs = require("neofs.fs")
-local utils = require("spec.neofs.utils")
 
 describe("neofs.state", function()
   -- it("returns default state first time", function()

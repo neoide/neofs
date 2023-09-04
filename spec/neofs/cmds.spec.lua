@@ -1,5 +1,4 @@
 local os = require("os")
-local utils = require("spec.neofs.utils")
 
 describe("neofs commands", function()
   -- describe("view directory tree", function()

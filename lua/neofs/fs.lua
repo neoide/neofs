@@ -1,4 +1,4 @@
---- File System functions
+--- File System functionj
 ---
 local const = require("neofs.const")
 local os = require("os")
@@ -12,8 +12,12 @@ local TYPES = {
   link      = const.TYPE_LINK,
 }
 
+function basename(str)
+  return string.gsub(str, "(.*/)(.*)", "%2")
+end
+
 local function trim(str)
-  return (str:gsub("(/+)$", ""))
+  return  string.gsub(str, "(/+)$", "")
 end
 
 local function join(parent, child)
@@ -29,7 +33,8 @@ local function entry(name, type, level, path)
   if not stat then
     error(fmt("failed to stat %s: ", path) .. err)
   end
-  return {
+
+  local value = {
     name  = name,
     path  = path,
     type  = type,
@@ -41,6 +46,21 @@ local function entry(name, type, level, path)
     ctime = stat.ctime.sec,
     mtime = stat.mtime.sec,
   }
+
+  if type == const.TYPE_DIR then
+    value.children = {}
+  end
+
+  return value
+end
+
+local function sort(entries, cmp)
+  table.sort(entries, cmp)
+  for i, e in ipairs(entries) do
+    if e.children then
+      sort(e.children, cmp)
+    end
+  end
 end
 
 local M = {}
@@ -51,14 +71,14 @@ M.exists = exists
 
 M.dirname = vim.fs.dirname
 
-M.scandir = function(level, root, expanded, filter)
-  local entries = {}
+M.scandir = function(level, root, expanded, filter, order)
+  local entries = { entry(basename(root), const.TYPE_DIR, level, root) }
 
-  local stack = { { root, level } }
+  local stack = { entries[1] }
   while #stack > 0 do
-    local dir, level = unpack(table.remove(stack, #stack))
+    local parent = table.remove(stack, #stack)
 
-    local fd = uv.fs_scandir(dir)
+    local fd = uv.fs_scandir(parent.path)
     while fd do
       local name, uv_type = uv.fs_scandir_next(fd)
       if not name then
@@ -70,17 +90,19 @@ M.scandir = function(level, root, expanded, filter)
         error("unexpected directory entry type " .. uv_type)
       end
 
-      local path = join(dir, name)
+      local path = join(parent.path, name)
 
       if not filter(name) then
+        local e = entry(name, type, parent.level + 1, path)
         if type == const.TYPE_DIR and expanded[path] then
-          table.insert(stack, { path, level + 1 })
+          table.insert(stack, e)
         end
-        table.insert(entries, entry(name, type, level, path))
+        table.insert(parent.children, e)
       end
     end
   end
 
+  sort(entries, order)
   return entries
 end
 

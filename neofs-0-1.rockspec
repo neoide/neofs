@@ -12,6 +12,7 @@ dependencies = {
   "penlight",
   "lyaml",
   "luacov",
+  "luacov-html",
 }
 
 build = {

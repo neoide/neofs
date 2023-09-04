@@ -3,7 +3,7 @@ return {
     output    = "TAP",
     pattern   = ".spec.lua",
     coverage  = true,
-    verbose   = false,
-    -- tags      = {"neofs.fs.rename"},
+    verbose   = true,
+    tags      = {"fs"},
   },
 }

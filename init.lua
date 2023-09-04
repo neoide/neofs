@@ -7,5 +7,5 @@ vim.opt.rtp = {
 
 vim.cmd([[
   filetype on
-  runtime lua/neofs.lua
+  runtime lua/neofs/init.lua
 ]])

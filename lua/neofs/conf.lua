@@ -12,13 +12,13 @@ local function order(a, b)
   if a.level == b.level then
     local pa = PRIO[a.type]
     local pb = PRIO[b.type]
-    return pa < pb or pa == pb and a.path < b.path
+    return pa < pb or pa == pb and a.name < b.name
   end
-  return a.path < b.path
+  return a.name < b.name
 end
 
 local function filter(...)
-  return true
+  return false
 end
 
 return {

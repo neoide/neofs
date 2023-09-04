@@ -1,3 +1,5 @@
+pcall("require", "luacov")
+
 --- NeoFS plugin entry point
 ---
 local cmds = require("neofs.cmds")
@@ -47,6 +49,4 @@ local function setup(usrcfg)
   init()
 end
 
-return {
-  setup = setup,
-}
+return { setup = setup }

@@ -1,8 +1,3 @@
-NEWCWD = "/tmp/neofs"
-OLDCWD = vim.fn.getcwd()
-
-function getfixture(path)
-  return dofile(OLDCWD .. "/spec/.data/" .. path .. ".lua")
-end
+utils = require "spec.util"
 
 require("busted.runner"){ standalone = false }

@@ -1,129 +1,358 @@
-local plpath = require("pl.path")
+local path = require("pl.path")
 local conf = require("neofs.conf")
 local const = require("neofs.const")
 local fs = require("neofs.fs")
-local utils = require("spec.neofs.utils")
 
-describe("neofs.fs", function()
+describe("fs.scandir #fs.scandir", function()
+  local fstree = {
+    a = {
+      a = {
+        x = {},
+        y = {
+          ".z.txt",
+          "x.txt",
+          "y.js",
+        },
+        "a.md",
+      },
+      b = {},
+      c = {
+        "x.js",
+        "y.js",
+      },
+      "a.txt",
+      "b.txt",
+    },
+    b = {},
+    c = {
+      "f1.c",
+      "f2.c",
+    },
+    ".x",
+    ".y",
+    "a.txt",
+    "b.rst",
+  }
+
   before_each(function()
-    utils.mkfs(NEWCWD)
-    vim.cmd("cd " .. NEWCWD)
+    utils.mkfs(utils.NEWCWD, fstree)
   end)
 
   after_each(function()
-    vim.cmd("cd " .. OLDCWD)
-    utils.rmfs(NEWCWD)
+    utils.rmfs(utils.NEWCWD)
   end)
 
-  local conf = require("neofs.conf")
+  local filter = conf.tree.filter
+  local order = conf.tree.order
 
-  describe("scandir", function()
-    local filter = function(name)
-      return false
+  local function read(entry)
+    local value = { name = entry.name, type = entry.type, level = entry.level }
+    if entry.children then
+      value.children = vim.tbl_map(read, entry.children)
     end
+    return value
+  end
 
-    local read = function(entry)
-      return { name = entry.name, type = entry.type, level = entry.level }
-    end
+  it("reads empty tree as empty table", function()
+    local root = path.join(utils.NEWCWD, "b")
+    local entries = fs.scandir(const.ROOT_LEVEL, root, {}, filter, order)
+    local actual = vim.tbl_map(read, entries)
 
-    it("reads directory tree without expand", function()
-      local data = getfixture("neofs.fs.scandir.noexpand")
-      local entries = fs.scandir(const.ROOT_LEVEL, NEWCWD, data.expanded, filter)
-      table.sort(entries, conf.tree.order)
-      local actual = vim.tbl_map(read, entries)
-      assert.are.same(data.expected, actual)
-    end)
+    local expected = {
+      {
+        level     = 0,
+        type      = 1,
+        name      = "b",
+        children  = {},
+      },
+    }
 
-    it("reads directory tree with expand", function()
-      local data = getfixture("neofs.fs.scandir.noexpand")
-      local entries = fs.scandir(const.ROOT_LEVEL, NEWCWD, data.expanded, filter)
-      table.sort(entries, conf.tree.order)
-      local actual = vim.tbl_map(read, entries)
-      assert.are.same(data.expected, actual)
-    end)
+    assert.are.same(expected, actual)
   end)
 
-  describe("mkdir", function()
-    it("creates new directory if parent exists", function()
-      local path = fs.join(NEWCWD, "dir_2/dir_2_3")
-      fs.mkdir(path)
-      assert.is.truthy(plpath.exists(path))
-    end)
+  it("reads tree without expand", function()
+    local entries = fs.scandir(const.ROOT_LEVEL, utils.NEWCWD, {}, filter, order)
+    local actual = vim.tbl_map(read, entries)
 
-    it("fails if parent directory does not exists", function()
-      local path = fs.join(NEWCWD, "dir_X/dir_2_3")
-      assert.has.errors(function()
-        fs.mkdir(path)
-      end)
-      assert.is.falsy(plpath.exists(path))
-    end)
+    local expected = {
+      {
+        level = 0,
+        type  = 1,
+        name  = "neofs",
+        children = {
+          {
+            level = 1,
+            name = "a",
+            type = 1,
+            children = {},
+          },
+          {
+            level = 1,
+            name = "b",
+            type = 1,
+            children = {},
+          },
+          {
+            level = 1,
+            name = "c",
+            type = 1,
+            children = {},
+          },
+          {
+            level = 1,
+            name = ".x",
+            type = 2,
+          },
+          {
+            level = 1,
+            name = ".y",
+            type = 2,
+          },
+          {
+            level = 1,
+            name = "a.txt",
+            type = 2,
+          },
+          {
+            level = 1,
+            name = "b.rst",
+            type = 2,
+          },
+        },
+      },
+    }
+
+    assert.are.same(expected, actual)
   end)
 
-  describe("trash", function()
-    local trashcmd = "trash"
+  it("reads tree with expand", function()
+    local expanded = {
+      [path.join(utils.NEWCWD, "a")] = true,
+      [path.join(utils.NEWCWD, "a/c")] = true,
+      [path.join(utils.NEWCWD, "b")] = true,
+      [path.join(utils.NEWCWD, "c")] = true,
+    }
 
-    it("executes trashcmd if path exists", function()
-      local path = fs.join(NEWCWD, "dir_2")
-      fs.trash(trashcmd, path)
-      assert.is.falsy(plpath.exists(path))
-    end)
+    local entries = fs.scandir(const.ROOT_LEVEL, utils.NEWCWD, expanded, filter, order)
+    local actual = vim.tbl_map(read, entries)
 
-    it("fails if trash cmd not in path", function()
-      assert.has.errors(function()
-        fs.trash("xxx", fs.join(NEWCWD, "dir_X"))
-      end)
-    end)
+    local expected = {
+      {
+        children = {
+          {
+            children = {
+              {
+                children = {},
+                level = 2,
+                name = "a",
+                type = 1
+              },
+              {
+                children = {},
+                level = 2,
+                name = "b",
+                type = 1
+              },
+              {
+                children = {
+                  {
+                    level = 3,
+                    name = "x.js",
+                    type = 2
+                  },
+                  {
+                    level = 3,
+                    name = "y.js",
+                    type = 2
+                  },
+                },
+                level = 2,
+                name = "c",
+                type = 1
+              },
+              {
+                level = 2,
+                name = "a.txt",
+                type = 2
+              },
+              {
+                level = 2,
+                name = "b.txt",
+                type = 2
+              },
+            },
+            level = 1,
+            name = "a",
+            type = 1
+          },
+          {
+            children = {},
+            level = 1,
+            name = "b",
+            type = 1
+          },
+          {
+            children = {
+              {
+                level = 2,
+                name = "f1.c",
+                type = 2
+              },
+              {
+                level = 2,
+                name = "f2.c",
+                type = 2
+              },
+            },
+            level = 1,
+            name = "c",
+            type = 1
+          },
+          {
+            level = 1,
+            name = ".x",
+            type = 2
+          },
+          {
+            level = 1,
+            name = ".y",
+            type = 2
+          },
+          {
+            level = 1,
+            name = "a.txt",
+            type = 2
+          },
+          {
+            level = 1,
+            name = "b.rst",
+            type = 2
+          },
+        },
+        level = 0,
+        name = "neofs",
+        type = 1
+      },
+    }
 
-    it("fails if path does not exist", function()
-      assert.has.errors(function()
-        fs.trash(trashcmd, fs.join(NEWCWD, "dir_X"))
-      end)
-    end)
+    assert.are.same(expected, actual)
+  end)
+end)
+
+describe("mkdir #fs.mkdir", function()
+  before_each(function()
+    os.execute("mkdir -p " .. path.join(utils.NEWCWD, "dir_1"))
   end)
 
-  describe("create", function()
-    it("creates file if parent directory exists", function()
-      local path = fs.join(NEWCWD, "dir_2/test.txt")
-      fs.create(path)
-      assert.is.truthy(plpath.exists(path))
-    end)
-
-    it("faild if parent directory does not exist", function()
-      local path = fs.join(NEWCWD, "dir_X/test.txt")
-      assert.has.errors(function()
-        fs.create(path)
-      end)
-      assert.is.falsy(plpath.exists(path))
-    end)
+  after_each(function()
+    os.execute("rm -rf " .. path.join(utils.NEWCWD, "dir_1"))
   end)
 
-  describe("rename #neofs.fs.rename", function()
-    it("renames if file exists", function()
-      local src = fs.join(NEWCWD, "dir_4/file_1")
-      local dst = fs.join(NEWCWD, "dir_3/file_1")
+  it("creates new directory if parent exists", function()
+    local dirpath = path.join(utils.NEWCWD, "dir_1/dir_1_1")
+    fs.mkdir(dirpath)
+    assert.is.truthy(path.exists(dirpath))
+  end)
+
+  it("fails if parent directory does not exists", function()
+    local dirpath = path.join(utils.NEWCWD, "dir_2/dir_2_1")
+    assert.has.errors(function()
+      fs.mkdir(dirpath)
+    end)
+    assert.is.falsy(path.exists(dirpath))
+  end)
+end)
+
+describe("create #fs.create", function()
+  before_each(function()
+    os.execute("mkdir -p " .. path.join(utils.NEWCWD, "dir_1"))
+  end)
+
+  after_each(function()
+    os.execute("rm -rf " .. path.join(utils.NEWCWD, "dir_1"))
+  end)
+
+  it("creates file if parent directory exists", function()
+    local filepath = path.join(utils.NEWCWD, "dir_1/test.txt")
+    fs.create(filepath)
+    assert.is.truthy(path.exists(filepath))
+  end)
+
+  it("faild if parent directory does not exist", function()
+    local filepath = path.join(utils.NEWCWD, "dir_2/test.txt")
+    assert.has.errors(function()
+      fs.create(filepath)
+    end)
+    assert.is.falsy(path.exists(filepath))
+  end)
+end)
+
+describe("rename #fs.rename", function()
+  before_each(function()
+    os.execute("mkdir -p " .. path.join(utils.NEWCWD, "root/dir_1"))
+    os.execute("mkdir -p " .. path.join(utils.NEWCWD, "root/dir_2"))
+    os.execute("touch " .. path.join(utils.NEWCWD, "root/dir_1/file_1"))
+  end)
+
+  after_each(function()
+    os.execute("rm -rf " .. path.join(utils.NEWCWD, "root"))
+  end)
+
+  it("renames if file exists", function()
+    local src = path.join(utils.NEWCWD, "root/dir_1/file_1")
+    local dst = path.join(utils.NEWCWD, "root/dir_2/file_1")
+    fs.rename(src, dst)
+    assert.is.falsy(path.exists(src))
+    assert.is.truthy(path.exists(dst))
+  end)
+
+  it("fails if source does not exist", function()
+    local src = path.join(utils.NEWCWD, "root/dir_X/file_1")
+    local dst = path.join(utils.NEWCWD, "root/dir_2/file_1")
+    assert.has.errors(function()
       fs.rename(src, dst)
-      assert.is.falsy(plpath.exists(src))
-      assert.is.truthy(plpath.exists(dst))
     end)
+    assert.is.falsy(path.exists(src))
+    assert.is.falsy(path.exists(dst))
+  end)
 
-    it("fails if source does not exist", function()
-      local src = fs.join(NEWCWD, "dir_X/file_1")
-      local dst = fs.join(NEWCWD, "dir_3/file_1")
-      assert.has.errors(function()
-        fs.read(src, dst)
-      end)
-      assert.is.falsy(plpath.exists(src))
-      assert.is.falsy(plpath.exists(dst))
+  it("fails if target does not exist", function()
+    local src = path.join(utils.NEWCWD, "root/dir_1/file_1")
+    local dst = path.join(utils.NEWCWD, "root/dir_X/file_1")
+    assert.has.errors(function()
+      fs.rename(src, dst)
     end)
+    assert.is.truthy(path.exists(src))
+    assert.is.falsy(path.exists(dst))
+  end)
+end)
 
-    it("fails if targer does not exist", function()
-      local src = fs.join(NEWCWD, "dir_4/file_1")
-      local dst = fs.join(NEWCWD, "dir_X/file_1")
-      assert.has.errors(function()
-        fs.read(src, dst)
-      end)
-      assert.is.truthy(plpath.exists(src))
-      assert.is.falsy(plpath.exists(dst))
+describe("trash #fs.trash", function()
+  local trashcmd = "trash"
+
+  before_each(function()
+    os.execute("mkdir -p " .. path.join(utils.NEWCWD, "dir_1"))
+  end)
+
+  after_each(function()
+    os.execute("rm -rf " .. path.join(utils.NEWCWD, "dir_1"))
+  end)
+
+  it("executes trashcmd if path exists", function()
+    local dirpath = path.join(utils.NEWCWD, "dir_1")
+    fs.trash(trashcmd, dirpath)
+    assert.is.falsy(path.exists(dirpath))
+  end)
+
+  it("fails if trash cmd not in path", function()
+    assert.has.errors(function()
+      fs.trash("xxx", path.join(utils.NEWCWD, "dir_1"))
+    end)
+  end)
+
+  it("fails if path does not exist", function()
+    assert.has.errors(function()
+      fs.trash(trashcmd, path.join(utils.NEWCWD, "dir_X"))
     end)
   end)
 end)

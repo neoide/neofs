@@ -1,3 +1,5 @@
+local neofs = require "neofs"
+
 describe("neofs setup", function()
   it("overrides configuration", function()
     local plugin_conf = require("neofs.conf")
@@ -11,7 +13,8 @@ describe("neofs setup", function()
       },
     }
     local expected_conf = vim.tbl_deep_extend("force", plugin_conf, user_conf)
-    require("neofs").setup(user_conf)
+    -- require("neofs").setup(user_conf)
+    neofs.setup(user_conf)
     assert.are.same(plugin_conf, expected_conf)
   end)
 
